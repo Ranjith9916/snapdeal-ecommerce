@@ -46,7 +46,7 @@ export default function SaleHeroEntrance({ onOpenModal }: SaleHeroEntranceProps)
 
   return (
     <div className="mb-6 mt-2">
-      {/* Myntra Grand Curtain Raiser Bar */}
+      {/* Grand Festival Curtain Raiser Bar */}
       <div
         className="rounded-3xl p-4 sm:p-6 text-white relative overflow-hidden shadow-2xl"
         style={{
@@ -63,7 +63,7 @@ export default function SaleHeroEntrance({ onOpenModal }: SaleHeroEntranceProps)
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-5 relative z-10">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-300 text-[11px] font-extrabold uppercase tracking-widest mb-1.5">
-              <span>⚡</span> MYNTRA STYLE GRAND ENTRANCE <span>⚡</span>
+              <span>⚡</span> MEGA FESTIVAL GRAND ENTRANCE <span>⚡</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
               <span>BIG FASHION FESTIVAL</span>

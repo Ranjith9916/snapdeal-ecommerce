@@ -24,7 +24,7 @@ export default function SaleTopTicker({ onOpenEntrance }: SaleTopTickerProps) {
   const formattedSeconds = String(timeLeft.s).padStart(2, '0')
 
   const items = [
-    '🔥 MYNTRA-STYLE BIG FASHION FESTIVAL IS LIVE',
+    '🔥 SNAPDEAL BIG FASHION FESTIVAL IS LIVE',
     '⚡ 50% – 80% OFF ON 15,000+ STYLES',
     '🎁 EXTRA ₹500 OFF ON FIRST PURCHASE • CODE: FESTIVAL50',
     '🚚 FREE DELIVERY ACROSS INDIA TODAY',

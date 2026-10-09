@@ -146,7 +146,7 @@ export default function SaleEntranceModal({ isOpen, onClose, onOpen }: SaleEntra
               {/* Grand Tag */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500/30 to-pink-500/30 border border-amber-400/50 text-amber-300 text-[11px] font-extrabold uppercase tracking-widest shadow-inner mb-3">
                 <span>👑</span>
-                <span>BIG FASHION FESTIVAL • MYNTRA-STYLE GRAND SALE</span>
+                <span>BIG FASHION FESTIVAL • SNAPDEAL MEGA GRAND SALE</span>
                 <span>✨</span>
               </div>
 
