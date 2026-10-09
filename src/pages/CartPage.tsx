@@ -4,6 +4,7 @@ import { CartIcon, CloseIcon, ShieldIcon, TruckIcon, RotateCcwIcon, SparklesIcon
 import Footer from '../components/Footer'
 import { useCart, CartItem } from '../contexts/CartContext'
 import { validateCoupon } from '../services/coupons'
+import { CARD_OFFERS, getBestCardOffer } from '../data/cardOffers'
 
 const suggestedItems = [
   { id: 'b8571648-0196-49e9-897e-6eb804514821', name: 'Sony Earbuds WF-1000XM5', img: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=100&h=100&fit=crop&auto=format', price: 14990 },
@@ -60,6 +61,7 @@ export default function CartPage() {
   const discount = originalTotal - subtotal
   const delivery = subtotal > 499 ? 0 : 49
   const total = subtotal - couponSavings + delivery
+  const bestCard = getBestCardOffer(subtotal)
 
   const applyCoupon = async () => {
     if (!coupon.trim()) {
@@ -218,6 +220,34 @@ export default function CartPage() {
                 </div>
               )}
             </div>
+
+            {/* Bank Card Offers Callout */}
+            {subtotal > 0 && bestCard && (
+              <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 via-white to-blue-50/60 border border-blue-200 shadow-sm relative overflow-hidden">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg">💳</span>
+                    <span className="text-[13px] font-extrabold text-blue-900">Partner Bank Card Offers</span>
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-600 text-white shadow-xs">
+                    Save up to ₹{bestCard.discount.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-[12px] text-gray-700 leading-snug">
+                  Choose <span className="font-bold text-blue-900">{bestCard.offer.bank}</span> or other partner cards at checkout for an instant discount of <span className="font-bold text-green-700">₹{bestCard.discount.toLocaleString()}</span>!
+                </p>
+                <div className="mt-2.5 flex flex-wrap gap-1.5 pt-2 border-t border-blue-100/60">
+                  {CARD_OFFERS.slice(0, 4).map(o => (
+                    <span key={o.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white text-gray-700 border border-blue-100 shadow-2xs">
+                      {o.bank} ({o.tag})
+                    </span>
+                  ))}
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600">
+                    +2 more
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Summary */}
             <div className="bg-white rounded-2xl p-5" style={{ border: '1px solid #f0f0f0', boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>

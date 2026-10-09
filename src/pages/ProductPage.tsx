@@ -8,6 +8,7 @@ import { trackProductView } from '../components/RecentlyViewed'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { useWishlist } from '../contexts/WishlistContext'
+import ProductCardOffers from '../components/ProductCardOffers'
 
 const tabs = ['description', 'specifications', 'reviews', 'faqs', 'warranty'] as const
 
@@ -470,9 +471,12 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Offers */}
+            {/* Interactive Bank & Card Offers */}
+            <ProductCardOffers productPrice={product.price} />
+
+            {/* General Offers */}
             <div className="mb-5 rounded-2xl overflow-hidden" style={{ border: '1px solid #f0f0f0' }}>
-              <p className="px-4 py-2.5 font-bold text-[14px] text-gray-800" style={{ borderBottom: '1px solid #f5f5f5', backgroundColor: '#fafafa' }}>Available Offers</p>
+              <p className="px-4 py-2.5 font-bold text-[14px] text-gray-800" style={{ borderBottom: '1px solid #f5f5f5', backgroundColor: '#fafafa' }}>Brand & Special Offers</p>
               {offersList.map((o: any, i: number) => (
                 <div key={i} className="flex items-start gap-2.5 px-4 py-3" style={{ borderBottom: i < offersList.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
                   <span className="text-base shrink-0">{o.icon || '🏷️'}</span>
@@ -510,6 +514,17 @@ export default function ProductPage() {
               <div>
                 <span className="text-[28px] font-extrabold text-gray-900">₹{product.price.toLocaleString()}</span>
                 <span className="ml-2 text-[14px] font-bold text-green-600">{product.discount}% off</span>
+              </div>
+
+              {/* Bank Card Offer Callout in Purchase Box */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/80">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#E40046]">
+                  <span>💳</span>
+                  <span>CARD OFFER AVAILABLE</span>
+                </div>
+                <p className="text-[11px] text-gray-700 font-semibold mt-0.5">
+                  Extra 10% instant off with HDFC, ICICI, SBI or Axis cards at checkout!
+                </p>
               </div>
               <p className="text-[13px] text-gray-500">
                 {(product.stock_quantity ?? 10) <= 5 && (product.stock_quantity ?? 10) > 0 ? (

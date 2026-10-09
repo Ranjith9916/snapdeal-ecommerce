@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext'
 import { getUserAddresses, addAddress, AddressModel } from '../services/addresses'
 import { checkout } from '../services/orders'
 import { validateCoupon } from '../services/coupons'
+import { CARD_OFFERS, calculateCardDiscount } from '../data/cardOffers'
 
 type Step = 'address' | 'delivery' | 'payment' | 'success'
 
@@ -18,7 +19,7 @@ const deliverySlots = [
 
 const paymentMethods = [
   { id: 'upi', label: 'UPI (GPay / PhonePe / Paytm)', icon: '⚡', desc: 'Instant payment via UPI app' },
-  { id: 'card', label: 'Credit / Debit Card', icon: '💳', desc: 'Visa, Mastercard, RuPay, Amex' },
+  { id: 'card', label: 'Credit / Debit Card (Bank Offers Available)', icon: '💳', desc: 'Save extra up to ₹1,500 with Bank Cards' },
   { id: 'netbanking', label: 'Net Banking', icon: '🏦', desc: 'All major banks supported' },
   { id: 'emi', label: 'EMI', icon: '📅', desc: 'No-cost EMI available on select cards' },
   { id: 'cod', label: 'Cash on Delivery', icon: '💵', desc: 'Pay when your order arrives' },
@@ -37,6 +38,7 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false)
   const [newAddr, setNewAddr] = useState(false)
   const [orderDisplayId, setOrderDisplayId] = useState('')
+  const [selectedCardOfferId, setSelectedCardOfferId] = useState<string>('hdfc-10')
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('')
@@ -63,7 +65,11 @@ export default function CheckoutPage() {
 
   const selectedSlot = deliverySlots.find((d) => d.id === selDelivery) || deliverySlots[0]
   const finalDeliveryPrice = deliveryFee + selectedSlot.price
-  const grandTotal = Math.max(0, subtotal - couponDiscount + finalDeliveryPrice)
+  const selectedCardOffer = CARD_OFFERS.find((o) => o.id === selectedCardOfferId) || null
+  const cardDiscount = (selPayment === 'card' && selectedCardOffer)
+    ? calculateCardDiscount(subtotal - couponDiscount, selectedCardOffer)
+    : 0
+  const grandTotal = Math.max(0, subtotal - couponDiscount - cardDiscount + finalDeliveryPrice)
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -151,6 +157,8 @@ export default function CheckoutPage() {
     const totals = {
       subtotal,
       discount,
+      cardDiscount,
+      couponDiscount,
       delivery: finalDeliveryPrice,
       total: grandTotal
     }
@@ -418,12 +426,57 @@ export default function CheckoutPage() {
                         </div>
                       )}
                       {selPayment === 'card' && pm.id === 'card' && (
-                        <div className="mt-2 px-4 py-3 bg-gray-50 rounded-xl grid grid-cols-2 gap-3">
-                          <input placeholder="Card Number (XXXX XXXX XXXX XXXX)" className="col-span-2 px-4 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
-                          <input placeholder="Name on Card" className="px-4 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
-                          <div className="flex gap-2">
-                            <input placeholder="MM/YY" className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
-                            <input placeholder="CVV" className="w-20 px-3 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
+                        <div className="mt-2.5 p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-3">
+                          {/* Card Offers Selector */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[12px] font-extrabold text-gray-800 flex items-center gap-1.5">
+                                <span>💳</span> Select Your Bank Card for Instant Discount:
+                              </span>
+                              <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                Instant Discount
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {CARD_OFFERS.map((offer) => {
+                                const isSelected = selectedCardOfferId === offer.id
+                                const savings = calculateCardDiscount(subtotal - couponDiscount, offer)
+                                return (
+                                  <button
+                                    key={offer.id}
+                                    type="button"
+                                    onClick={() => setSelectedCardOfferId(offer.id)}
+                                    className={`p-2.5 rounded-xl text-left transition-all border ${
+                                      isSelected
+                                        ? 'bg-rose-50 border-[#E40046] shadow-sm ring-1 ring-[#E40046]'
+                                        : 'bg-white border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between text-[11px] font-bold">
+                                      <span className="text-gray-800">{offer.bank}</span>
+                                      {savings > 0 && <span className="text-green-600 font-extrabold">-₹{savings}</span>}
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 truncate mt-0.5">{offer.discountText}</p>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {cardDiscount > 0 && selectedCardOffer && (
+                              <div className="mt-2.5 p-2 rounded-xl bg-green-50 border border-green-200 text-xs font-semibold text-green-800 flex items-center justify-between">
+                                <span>✓ {selectedCardOffer.bank} Offer Applied: Save ₹{cardDiscount.toLocaleString()}</span>
+                                <span className="text-[10px] text-green-700 font-bold bg-green-200/60 px-2 py-0.5 rounded-md">Auto-Applied</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Card Inputs */}
+                          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                            <input placeholder="Card Number (XXXX XXXX XXXX XXXX)" className="col-span-2 px-4 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
+                            <input placeholder="Name on Card" className="px-4 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
+                            <div className="flex gap-2">
+                              <input placeholder="MM/YY" className="flex-1 px-3 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
+                              <input placeholder="CVV" className="w-20 px-3 py-2.5 rounded-xl text-[13px] outline-none bg-white border border-gray-200" />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -521,6 +574,12 @@ export default function CheckoutPage() {
                     <span className="font-semibold">−₹{couponDiscount.toLocaleString()}</span>
                   </div>
                 )}
+                {cardDiscount > 0 && selectedCardOffer && (
+                  <div className="flex justify-between text-green-600 font-semibold animate-pulse">
+                    <span className="flex items-center gap-1">💳 {selectedCardOffer.bank} Card Offer</span>
+                    <span>−₹{cardDiscount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span>Delivery ({selectedSlot.label})</span>
                   <span className="font-semibold text-green-600">{finalDeliveryPrice === 0 ? 'FREE' : `₹${finalDeliveryPrice}`}</span>
@@ -531,10 +590,17 @@ export default function CheckoutPage() {
                 <span>Total Amount</span>
                 <span>₹{grandTotal.toLocaleString()}</span>
               </div>
-              {(discount > 0 || couponDiscount > 0) && (
-                <p className="text-[12px] text-green-600 font-bold text-center bg-green-50 py-1.5 rounded-lg mb-3">
-                  You're saving ₹{(discount + couponDiscount).toLocaleString()} on this order! 🎉
-                </p>
+              {(discount > 0 || couponDiscount > 0 || cardDiscount > 0) && (
+                <div className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 mb-3 text-center">
+                  <p className="text-[12px] text-emerald-700 font-extrabold">
+                    🎉 Total Savings: ₹{(discount + couponDiscount + cardDiscount).toLocaleString()}
+                  </p>
+                  {cardDiscount > 0 && (
+                    <p className="text-[10px] text-emerald-600 font-medium mt-0.5">
+                      Includes ₹{cardDiscount.toLocaleString()} instant bank card discount!
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Step Navigation */}

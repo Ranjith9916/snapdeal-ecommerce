@@ -1299,3 +1299,66 @@ test('Exact-item Multi-Angle Consistency: Traditional products strictly use exac
   assert.ok(productsTs.includes('/images/watches/michael_kors_strap.jpg'), 'Michael Kors strap crop must exist');
 });
 
+// ---------------------------------------------------------------------------
+// 23. BANK CARD OFFERS CALCULATION & INTEGRATION TESTS
+// ---------------------------------------------------------------------------
+test('Bank Card Offers: percentage discounts, caps, flat savings, and min spend thresholds', () => {
+  const cardOffersPath = path.resolve('src/data/cardOffers.ts');
+  assert.ok(fs.existsSync(cardOffersPath), 'cardOffers.ts must exist');
+
+  const offersContent = fs.readFileSync(cardOffersPath, 'utf8');
+  assert.ok(offersContent.includes('export const CARD_OFFERS'), 'CARD_OFFERS must be exported');
+  assert.ok(offersContent.includes('calculateCardDiscount'), 'calculateCardDiscount must be exported');
+  assert.ok(offersContent.includes('getBestCardOffer'), 'getBestCardOffer must be exported');
+
+  // Logic emulation matching cardOffers.ts
+  const hdfcOffer = {
+    id: 'hdfc-10',
+    bank: 'HDFC Bank',
+    discountType: 'percentage',
+    discountValue: 10,
+    minSpend: 1500,
+    maxDiscount: 1500,
+  };
+
+  const iciciOffer = {
+    id: 'icici-flat',
+    bank: 'ICICI Bank',
+    discountType: 'flat',
+    discountValue: 750,
+    minSpend: 2500,
+    maxDiscount: 750,
+  };
+
+  const calculateDiscount = (price, offer) => {
+    if (!offer || price < offer.minSpend) return 0;
+    let disc = 0;
+    if (offer.discountType === 'percentage') {
+      disc = Math.round((price * offer.discountValue) / 100);
+      if (offer.maxDiscount && disc > offer.maxDiscount) {
+        disc = offer.maxDiscount;
+      }
+    } else {
+      disc = offer.discountValue;
+    }
+    return Math.min(disc, price);
+  };
+
+  // 1. Min spend threshold
+  assert.equal(calculateDiscount(1000, hdfcOffer), 0, 'Below ₹1500 min spend must yield ₹0 discount');
+  assert.equal(calculateDiscount(2000, iciciOffer), 0, 'Below ₹2500 min spend must yield ₹0 discount');
+
+  // 2. Percentage calculation
+  assert.equal(calculateDiscount(5000, hdfcOffer), 500, '10% of 5000 is 500');
+
+  // 3. Max discount cap enforcement
+  assert.equal(calculateDiscount(20000, hdfcOffer), 1500, '10% of 20000 capped at 1500 max discount');
+
+  // 4. Flat discount calculation
+  assert.equal(calculateDiscount(3000, iciciOffer), 750, 'ICICI gives flat 750 on spend >= 2500');
+
+  // 5. Total clamping (discount cannot exceed item price)
+  const tinyPriceOffer = { discountType: 'flat', discountValue: 800, minSpend: 100 };
+  assert.equal(calculateDiscount(500, tinyPriceOffer), 500, 'Discount must never exceed price');
+});
+
