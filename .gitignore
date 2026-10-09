@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+.cache/
+.env*
+.vite/
+vite.config.*.timestamp-*
+*.tsbuildinfo
+*-debug.log*
+.claude-replay.*
+.tmp-*
+scratch_*
+unsplash_*.json
+valid_candidates.json
+check_dim.ps1
+crop_pink_shirt.ps1
+generate_exact_crops.ps1

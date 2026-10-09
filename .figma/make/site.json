@@ -1,0 +1,10 @@
+{
+  "description": "A premium e-commerce platform offering personalized deals, seamless search, and AI assistance for a modern, user-friendly shopping experience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
