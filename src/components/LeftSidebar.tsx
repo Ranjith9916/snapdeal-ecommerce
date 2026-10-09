@@ -183,8 +183,8 @@ export default function LeftSidebar({ collapsed, onToggle }: LeftSidebarProps) {
     <aside
       className="fixed left-0 bg-white flex flex-col"
       style={{
-        top: 72,
-        height: 'calc(100vh - 72px)',
+        top: 104,
+        height: 'calc(100vh - 104px)',
         width: w,
         borderRight: '1px solid #f0f0f0',
         boxShadow: '1px 0 12px rgba(0,0,0,0.04)',
