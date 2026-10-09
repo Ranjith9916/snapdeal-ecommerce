@@ -125,10 +125,16 @@ export default function HomeSections() {
 
   useEffect(() => {
     async function load() {
-      const all = await getProducts()
-      setGamingZone(all.slice(0, 6))
-      setOfficeEssentials(all.slice(6, 12))
-      setSmartHome(all.slice(12, 18))
+      try {
+        const all = await getProducts()
+        if (all && all.length > 0) {
+          setGamingZone(all.slice(0, 6))
+          setOfficeEssentials(all.slice(6, 12))
+          setSmartHome(all.slice(12, 18))
+        }
+      } catch (err) {
+        console.warn('Error loading home sections:', err)
+      }
     }
     load()
   }, [])

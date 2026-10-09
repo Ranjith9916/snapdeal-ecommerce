@@ -77,21 +77,25 @@ export default function FeaturedSections() {
 
   useEffect(() => {
     async function loadFeatured() {
-      const [all, newProds] = await Promise.all([
-        getProducts(),
-        getNewArrivalsProducts({ limit: 6 })
-      ])
-      if (all && all.length > 0) {
-        // Trending deals (highest discount)
-        const sortedByDiscount = [...all].sort((a, b) => (b.discount || 0) - (a.discount || 0))
-        setTrending(sortedByDiscount.slice(0, 6).map(p => mapToProduct(p, 'Hot Deal')))
+      try {
+        const [all, newProds] = await Promise.all([
+          getProducts(),
+          getNewArrivalsProducts({ limit: 6 })
+        ])
+        if (all && all.length > 0) {
+          // Trending deals (highest discount)
+          const sortedByDiscount = [...all].sort((a, b) => (b.discount || 0) - (a.discount || 0))
+          setTrending(sortedByDiscount.slice(0, 6).map(p => mapToProduct(p, 'Hot Deal')))
 
-        // Best sellers (mix of top categories)
-        setBestSellers(all.slice(6, 12).map(p => mapToProduct(p, 'Best Seller')))
-      }
-      if (newProds && newProds.length > 0) {
-        // New arrivals exclusively from brand-new catalog
-        setNewArrivals(newProds.map(p => mapToProduct(p, 'New')))
+          // Best sellers (mix of top categories)
+          setBestSellers(all.slice(6, 12).map(p => mapToProduct(p, 'Best Seller')))
+        }
+        if (newProds && newProds.length > 0) {
+          // New arrivals exclusively from brand-new catalog
+          setNewArrivals(newProds.map(p => mapToProduct(p, 'New')))
+        }
+      } catch (err) {
+        console.warn('Error loading featured sections:', err)
       }
     }
     loadFeatured()

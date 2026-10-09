@@ -4950,26 +4950,56 @@ export const ALL_SUPPLEMENTAL_PRODUCTS: ProductModel[] = [
   ...SPORTS_CATALOG,
 ];
 
-export async function getProducts(options?: { categoryId?: string; limit?: number; gender?: 'men' | 'women' | 'kids' }) {
-  let query = supabase.from('products').select('*');
-  
-  if (options?.categoryId) {
-    query = query.eq('category_id', options.categoryId);
-  }
-  
-  if (options?.limit) {
-    query = query.limit(options.limit);
-  }
-  
-  const { data, error } = await query.order('created_at', { ascending: false });
+export const DEFAULT_CATEGORIES: CategoryModel[] = [
+  { id: FASHION_CATEGORY_ID, name: 'Fashion', slug: 'fashion' },
+  { id: FOOTWEAR_CATEGORY_ID, name: 'Footwear', slug: 'footwear' },
+  { id: WATCHES_CATEGORY_ID, name: 'Watches', slug: 'watches' },
+  { id: BEAUTY_CATEGORY_ID, name: 'Beauty', slug: 'beauty' },
+  { id: HOME_CATEGORY_ID, name: 'Home & Kitchen', slug: 'home' },
+  { id: SPORTS_CATEGORY_ID, name: 'Sports & Fitness', slug: 'sports' },
+  { id: BOOKS_CATEGORY_ID, name: 'Books', slug: 'books' },
+  { id: MOBILES_CATEGORY_ID, name: 'Mobiles', slug: 'mobiles' },
+  { id: LAPTOPS_CATEGORY_ID, name: 'Laptops', slug: 'laptops' },
+  { id: ELECTRONICS_CATEGORY_ID, name: 'Electronics', slug: 'electronics' },
+  { id: TOYS_CATEGORY_ID, name: 'Toys & Games', slug: 'toys' },
+];
+
+let supabaseOfflineMode = false;
+
+function withTimeout<T>(promise: PromiseLike<T>, ms = 1500): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Supabase request timeout')), ms)),
+  ]);
+}
+
+export async function getProducts(options?: { categoryId?: string; limit?: number; gender?: 'men' | 'women' | 'kids' }): Promise<ProductModel[]> {
   let dbProducts: ProductModel[] = [];
-  if (error) {
-    console.error('Error fetching products:', error);
-  } else if (data) {
-    dbProducts = (data as ProductModel[]).map(sanitizeProduct);
+  if (!supabaseOfflineMode) {
+    try {
+      let query = supabase.from('products').select('*');
+      
+      if (options?.categoryId) {
+        query = query.eq('category_id', options.categoryId);
+      }
+      
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+      
+      const { data, error } = await withTimeout(query.order('created_at', { ascending: false }), 1500);
+      if (error) {
+        console.warn('Supabase products query returned error:', error.message);
+      } else if (data && data.length > 0) {
+        dbProducts = (data as ProductModel[]).map(sanitizeProduct);
+      }
+    } catch (err) {
+      supabaseOfflineMode = true;
+      console.warn('Supabase fetch failed in getProducts, switching to offline fallback catalog:', err);
+    }
   }
 
-  // Enrich with supplementary products for categories that need catalog depth
+  // Enrich with supplementary products for categories that need catalog depth or offline fallback
   let allProducts = dbProducts;
   const existingIds = new Set(dbProducts.map(p => p.id));
   
@@ -5005,12 +5035,15 @@ export async function getProducts(options?: { categoryId?: string; limit?: numbe
   return allProducts;
 }
 
-export async function getDealsProducts(options?: { minDiscount?: number; categoryId?: string; limit?: number }) {
-  const minDiscount = options?.minDiscount ?? 25;
+export async function getDealsProducts(options?: { minDiscount?: number; categoryId?: string; limit?: number }): Promise<ProductModel[]> {
+  const minDiscount = options?.minDiscount ?? 20;
   const all = await getProducts(options?.categoryId ? { categoryId: options.categoryId } : undefined);
   
   // Filter products with significant discount and valid deals
   let deals = all.filter(p => (p.discount || 0) >= minDiscount || (p.original_price > p.price));
+  if (deals.length === 0 && all.length > 0) {
+    deals = [...all];
+  }
   
   // Sort by highest discount first
   deals.sort((a, b) => (b.discount || 0) - (a.discount || 0));
@@ -5021,7 +5054,7 @@ export async function getDealsProducts(options?: { minDiscount?: number; categor
   return deals;
 }
 
-export async function getNewArrivalsProducts(options?: { categoryId?: string; gender?: 'men' | 'women' | 'kids'; limit?: number }) {
+export async function getNewArrivalsProducts(options?: { categoryId?: string; gender?: 'men' | 'women' | 'kids'; limit?: number }): Promise<ProductModel[]> {
   // STRICT REQUIREMENT: Return EXCLUSIVELY new products created specifically for New Arrivals (no existing products)
   let newArrivals = [...NEW_ARRIVALS_CATALOG];
 
@@ -5050,7 +5083,7 @@ export function isValidUUID(id: string): boolean {
   return Boolean(id && UUID_REGEX.test(id));
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: string): Promise<ProductModel | null> {
   if (!id) return null;
   const cleanId = String(id).trim();
 
@@ -5063,16 +5096,17 @@ export async function getProductById(id: string) {
   }
 
   // 2. If valid UUID, query Supabase DB
-  if (isValidUUID(cleanId)) {
+  if (isValidUUID(cleanId) && !supabaseOfflineMode) {
     try {
-      const { data, error } = await supabase.from('products').select('*').eq('id', cleanId).maybeSingle();
+      const { data, error } = await withTimeout(supabase.from('products').select('*').eq('id', cleanId).maybeSingle(), 1500);
       if (error) {
-        console.error('Error fetching product from Supabase:', error);
+        console.warn('Error fetching product from Supabase:', error.message);
         return null;
       }
       return data ? sanitizeProduct(data as ProductModel) : null;
     } catch (err) {
-      console.error('Exception fetching product:', err);
+      supabaseOfflineMode = true;
+      console.warn('Exception fetching product:', err);
       return null;
     }
   }
@@ -5080,35 +5114,46 @@ export async function getProductById(id: string) {
   return null;
 }
 
-export async function getCategories() {
-  const { data, error } = await supabase.from('categories').select('*').order('name');
-  if (error) {
-    console.error('Error fetching categories:', error);
-    return [];
+export async function getCategories(): Promise<CategoryModel[]> {
+  if (!supabaseOfflineMode) {
+    try {
+      const { data, error } = await withTimeout(supabase.from('categories').select('*').order('name'), 1500);
+      if (!error && data && data.length > 0) {
+        return data as CategoryModel[];
+      }
+    } catch (err) {
+      supabaseOfflineMode = true;
+      console.warn('Network/Supabase error in getCategories, using default categories:', err);
+    }
   }
-  return (data as CategoryModel[]) || [];
+  return DEFAULT_CATEGORIES;
 }
 
-export async function searchProducts(keyword: string, categoryId?: string) {
+export async function searchProducts(keyword: string, categoryId?: string): Promise<ProductModel[]> {
   const cleanKeyword = keyword.trim().toLowerCase();
-  
-  // 1. Fetch from Supabase
-  let query = supabase.from('products').select('*');
-
-  if (cleanKeyword) {
-    query = query.or(`name.ilike.%${cleanKeyword}%,brand.ilike.%${cleanKeyword}%`);
-  }
-    
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-  }
-    
-  const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
   let dbProducts: ProductModel[] = [];
-  if (error) {
-    console.error('Error searching products:', error);
-  } else if (data) {
-    dbProducts = (data as ProductModel[]).map(sanitizeProduct);
+
+  if (!supabaseOfflineMode) {
+    try {
+      // 1. Fetch from Supabase
+      let query = supabase.from('products').select('*');
+
+      if (cleanKeyword) {
+        query = query.or(`name.ilike.%${cleanKeyword}%,brand.ilike.%${cleanKeyword}%`);
+      }
+        
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
+      }
+        
+      const { data, error } = await withTimeout(query.order('created_at', { ascending: false }).limit(50), 1500);
+      if (!error && data && data.length > 0) {
+        dbProducts = (data as ProductModel[]).map(sanitizeProduct);
+      }
+    } catch (err) {
+      supabaseOfflineMode = true;
+      console.warn('Network/Supabase error in searchProducts, falling back to local search:', err);
+    }
   }
 
   // 2. Search within supplemental catalog

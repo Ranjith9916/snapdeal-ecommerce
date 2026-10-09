@@ -166,9 +166,14 @@ export default function FlashSale() {
 
   useEffect(() => {
     async function loadDeals() {
-      const data = await getProducts({ limit: 4 })
-      setDeals(data)
-      setLoading(false)
+      try {
+        const data = await getProducts({ limit: 4 })
+        setDeals(data)
+      } catch (err) {
+        console.warn('Error loading flash deals:', err)
+      } finally {
+        setLoading(false)
+      }
     }
     loadDeals()
   }, [])

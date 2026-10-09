@@ -61,26 +61,30 @@ export default function PersonalizedRecommendations() {
 
   useEffect(() => {
     async function loadRecs() {
-      const all = await getProducts()
-      if (all && all.length > 0) {
-        setSignalProducts({
-          search: {
-            reason: 'Based on your searches for "wireless audio" & "top deals"',
-            products: all.slice(0, 6).map(p => mapToProduct(p, 'For You')),
-          },
-          social: {
-            reason: 'Trending in Bengaluru on social channels right now',
-            products: all.slice(6, 12).map(p => mapToProduct(p, 'Trending')),
-          },
-          browsed: {
-            reason: 'Picked because you browsed Electronics, Laptops & Fashion',
-            products: all.slice(12, 18).map(p => mapToProduct(p, 'Browsed')),
-          },
-          ads: {
-            reason: 'Curated premium picks matched to your preferences',
-            products: all.slice(18, 24).map(p => mapToProduct(p, 'Featured')),
-          },
-        })
+      try {
+        const all = await getProducts()
+        if (all && all.length > 0) {
+          setSignalProducts({
+            search: {
+              reason: 'Based on your searches for "wireless audio" & "top deals"',
+              products: all.slice(0, 6).map(p => mapToProduct(p, 'For You')),
+            },
+            social: {
+              reason: 'Trending in Bengaluru on social channels right now',
+              products: all.slice(6, 12).map(p => mapToProduct(p, 'Trending')),
+            },
+            browsed: {
+              reason: 'Picked because you browsed Electronics, Laptops & Fashion',
+              products: all.slice(12, 18).map(p => mapToProduct(p, 'Browsed')),
+            },
+            ads: {
+              reason: 'Curated premium picks matched to your preferences',
+              products: all.slice(18, 24).map(p => mapToProduct(p, 'Featured')),
+            },
+          })
+        }
+      } catch (err) {
+        console.warn('Error loading recommendations:', err)
       }
     }
     loadRecs()
